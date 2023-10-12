@@ -41,7 +41,7 @@ def get_monetization():
     plt.grid()
     plt.tight_layout()
     plt.show()
-#get_monetization()
+get_monetization()
 
 def get_funnel():
     sql = '''select event_param_int as level, count(user_id) as count from test_schema.red_robot_game where event_name='start_level' group by event_param_int order by level;'''
@@ -69,4 +69,4 @@ def get_retention():
     plt.grid()
     plt.tight_layout()
     plt.show()
-get_retention
+#get_retention

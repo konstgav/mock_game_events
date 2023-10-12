@@ -12,6 +12,23 @@ def get_purches():
     print(res)
 #get_purches()
 
+def get_contry_purches():
+    df = pd.read_csv('events.csv', parse_dates=['event_date'])
+    #country = 'India'
+    df_purch = df[(df['event_name']=='purchase')] #&(df['country']==country)]
+    df_purch = df_purch.groupby(['country', 'user_id']).agg(value=('event_param_int','sum')).reset_index()
+    print(df_purch)
+    df_purch.to_csv('purches.csv', index=False)
+get_contry_purches()
+
+def get_arpu():
+    df = pd.read_csv('events.csv', parse_dates=['event_date'])
+    df_purch = df[df['event_name']=='purchase']
+    total_value = sum(df_purch['event_param_int'])
+    total_users = len(df['user_id'].unique())
+    print(total_value, total_users, total_value/ total_users)
+#get_arpu()
+
 def plot_game_time():
     for sample in range(100):
         cur_date = 0
@@ -33,4 +50,11 @@ def insert_data():
     df = pd.read_csv('events.csv', parse_dates=['event_date'])
     engine = create_engine('postgresql://student:student@localhost:5432/game_events')
     df.to_sql('course.mad_robots_game', engine)
-insert_data()    
+#insert_data() 
+
+def count_countries():
+    df = pd.read_csv('events.csv', parse_dates=['event_date'])
+    df = df[df['event_name']=='first_open']
+    df_gr = df.groupby('country').agg(count=('user_id','count'))
+    print(df_gr)
+#count_countries()

@@ -14,15 +14,15 @@ def churn_func(level):
     b = 0.5
     threshold = 1. - a*np.exp(-b*level)
     rnd_num = random.random()
-    return rnd_num > threshold
+    return rnd_num > threshold*user['country_retention_factor']
 
 
-def pursh_func(level):
+def pursh_func(level, user):
     min_proba = 0.1
     max_proba = 0.3
     threshold = min_proba - (max_proba-min_proba)*level/100
     rnd_num = random.random()
-    return rnd_num < threshold
+    return rnd_num < threshold*user['country_monetization_factor']
 
 
 def get_day_by_level(level):
@@ -44,6 +44,9 @@ def get_dataset_params():
     dataset_params['payer_types_thresh'] = [0.04, 0.03, 0.02, 0.01, 0.9]
     dataset_params['prices'] = [2,5,10,20,30,50,100]
     dataset_params['payer_types_probas'] = [[0.6,0.3,0.1,0,0,0,0], [0.2,0.3,0.3,0.2,0,0,0], [0,0.1,0.2,0.3,0.3,0.1,0], [0,0,0,0,0.3,0.4,0.3]]
+    dataset_params['country_monetization_factor'] = {'USA': 1.15, 'France': 1.02, 'India': 0.98}
+    dataset_params['country_retention_factor'] = {'USA': 1.1, 'France': 1.05, 'India': 1.0}    
+    dataset_params['country_user_probas'] = {'USA': 0.4, 'France': 0.3, 'India': 0.3}
     return dataset_params
 
 
@@ -68,6 +71,12 @@ def spawn_user(dataset_params, is_new_user, date):
     user['payer_types_index'] = payer_types_index
     if payer_types_index < len(dataset_params['payer_types_thresh'])-1:        
         user['price_probas'] = dataset_params['payer_types_probas'][payer_types_index]
+    country_probas = list(dataset_params['country_user_probas'].values())
+    country_index = get_varian_by_probas(country_probas)
+    country = list(dataset_params['country_user_probas'].keys())[country_index]
+    user['country'] = country
+    user['country_monetization_factor'] = dataset_params['country_monetization_factor'][country]
+    user['country_retention_factor'] = dataset_params['country_retention_factor'][country]
     return user
 
 
@@ -79,7 +88,8 @@ def create_event(user, event_name, event_date, event_param_int, event_param_str)
     if event_param_int is not None:
         event['event_param_int'] = event_param_int
     if event_param_str is not None:
-        event['event_param_str'] = event_param_str        
+        event['event_param_str'] = event_param_str
+    event['country'] = user['country']
     #event['user_first_date'] = user['start_date']
     #event['user_total_levels'] = user['level']
     return event
@@ -104,7 +114,7 @@ def generate_user_history(user):
             login_event = create_event(user, 'login', current_date, None, None)        
         start_level = create_event(user, 'start_level', current_date, level, None)
         user_events.append(start_level)
-        if (user['payer_types_index']< 4) and pursh_func(level):
+        if (user['payer_types_index']< 4) and pursh_func(level, user):
             index = get_varian_by_probas(user['price_probas'])
             price = dataset_params['prices'][index]
             purchase = create_event(user, 'purchase', current_date, price, None)
