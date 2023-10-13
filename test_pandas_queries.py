@@ -2,6 +2,7 @@ import pandas as pd
 from generate_dataset import get_day_by_level
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine
+from scipy import stats
 
 def get_purches():
     df = pd.read_csv('events.csv', parse_dates=['event_date'])
@@ -16,9 +17,12 @@ def get_contry_purches():
     df = pd.read_csv('events.csv', parse_dates=['event_date'])
     #country = 'India'
     df_purch = df[(df['event_name']=='purchase')] #&(df['country']==country)]
-    df_purch = df_purch.groupby(['country', 'user_id']).agg(value=('event_param_int','sum')).reset_index()
-    print(df_purch)
+    df_purch = df_purch.groupby(['country', 'user_id']).agg(value=('event_param_int','sum')).reset_index()    
     df_purch.to_csv('purches.csv', index=False)
+    data_india = df_purch[df_purch['country']=='India']['value']
+    data_usa = df_purch[df_purch['country']=='USA']['value']
+    res = stats.ttest_ind(data_usa, data_india, alternative='greater')
+    print(res)
 get_contry_purches()
 
 def get_arpu():
