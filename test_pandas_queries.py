@@ -23,7 +23,7 @@ def get_contry_purches():
     data_usa = df_purch[df_purch['country']=='USA']['value']
     res = stats.ttest_ind(data_usa, data_india, alternative='greater')
     print(res)
-get_contry_purches()
+#get_contry_purches()
 
 def get_arpu():
     df = pd.read_csv('events.csv', parse_dates=['event_date'])
@@ -62,3 +62,21 @@ def count_countries():
     df_gr = df.groupby('country').agg(count=('user_id','count'))
     print(df_gr)
 #count_countries()
+
+def logins():
+    df = pd.read_csv('events.csv', parse_dates=['event_date'])
+    df = df[df['event_name']=='login']
+    df_gr = df.groupby('event_date').agg(count=('user_id','count'))
+    print(df_gr)
+    plt.plot(df_gr['count'])
+    plt.show()
+#logins()
+
+def count_start_level():
+    df = pd.read_csv('events.csv', parse_dates=['event_date'])
+    df = df[df['event_name']=='start_level']
+    df_gr = df.groupby('event_param_int').agg(count=('user_id','count'))
+    plt.plot(df_gr)
+    plt.show()
+count_start_level()
+

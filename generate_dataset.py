@@ -3,15 +3,16 @@ from datetime import datetime, date, timedelta
 import uuid
 import random 
 import numpy as np
+import matplotlib.pyplot as plt
 
 def daterange(start_date, end_date):
     for n in range(int((end_date - start_date).days)):
         yield start_date + timedelta(n)
 
 
-def churn_func(level):
-    a = 0.5
-    b = 0.5
+def churn_func(level, user):
+    a = 0.2
+    b = 0.03
     threshold = 1. - a*np.exp(-b*level)
     rnd_num = random.random()
     return rnd_num > threshold*user['country_retention_factor']
@@ -104,14 +105,15 @@ def generate_user_history(user):
     max_level = user['dataset_params']['max_level']
     current_date = user['start_date']
     for level in range(user['level'], max_level):    
-        if churn_func(level):
+        if churn_func(level, user):
             return user_events
         delta_days = get_day_by_level(level)
         current_date += timedelta(delta_days)
         if current_date > dataset_params['finish_date']:
             break
         if delta_days > 0:
-            login_event = create_event(user, 'login', current_date, None, None)        
+            login_event = create_event(user, 'login', current_date, None, None)
+            user_events.append(login_event)
         start_level = create_event(user, 'start_level', current_date, level, None)
         user_events.append(start_level)
         if (user['payer_types_index']< 4) and pursh_func(level, user):
@@ -129,6 +131,14 @@ def generate_user_events(user):
         df_user_events['event_param_int'] = pd.array(df_user_events['event_param_int'], dtype="Int64")
     return df_user_events
 
+
+def plot_levels_days():
+    levels = np.arange(1,100)
+    days = []
+    for level in levels:
+        days.append(get_day_by_level(level))
+    plt.plot(levels, days)
+    plt.show()
 
 if __name__ == '__main__':
     dataset_params = get_dataset_params()
