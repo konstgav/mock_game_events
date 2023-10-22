@@ -159,4 +159,71 @@ def get_retention():
     plt.grid()
     plt.tight_layout()
     plt.show()
-get_retention()
+#get_retention()
+
+def get_ltv():
+    sql = '''
+    with new_users as
+    (select
+        user_id,
+        event_date as first_day
+    from
+        course.red_robot_game
+    where
+        event_name='first_open' and
+        event_date >= to_timestamp('2022-01-01', 'YYYY-MM-DD') and
+        event_date < to_timestamp('2022-11-01', 'YYYY-MM-DD')),
+    
+    purches as
+    (select
+        user_id,
+        event_date,
+        event_param_int as value
+    from
+        course.red_robot_game
+    where
+        event_name='purchase'),
+    
+    purches_by_day as
+    (select
+        new_users.user_id,
+        EXTRACT(DAY FROM purches.event_date - new_users.first_day) as days,
+        purches.value
+    from
+        new_users
+    left join
+        purches
+    on
+        new_users.user_id = purches.user_id),
+    
+    sum_purches_by_day as
+    (select
+        days,
+        sum(value) AS sum_value
+    from
+        purches_by_day
+    group by
+        days
+    order by
+       days)
+
+    select
+        days, 
+        sum(sum_value) over (order by days)::decimal / (select count(1) from new_users) AS sum
+    from
+        sum_purches_by_day
+    ;'''
+ 
+    columns_names = ['days', 'ltv']
+    df = make_query(sql, columns_names)
+    print(df)
+    #exit()
+    plt.title('Накопление LTV по дням')
+    plt.xlabel('день')
+    plt.ylabel('Накопленный LTV, $')
+    plt.plot(df['days'], df['ltv'])
+    #plt.xlim(0,30)
+    plt.grid()
+    plt.tight_layout()
+    plt.show()
+get_ltv()
