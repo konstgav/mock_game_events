@@ -226,4 +226,67 @@ def get_ltv():
     plt.grid()
     plt.tight_layout()
     plt.show()
-get_ltv()
+#get_ltv()
+
+def get_purch_by_level():
+    sql = '''
+    with start_level as
+    (select
+        user_id,
+        event_date,
+        LEAD(event_date) OVER (PARTITION BY user_id ORDER BY event_date) as next_date,
+        event_param_int as level
+    from
+        course.red_robot_game
+    where
+        event_name='start_level'),
+    
+    purches as
+    (select
+        user_id,
+        event_date,
+        event_param_int as value
+    from
+        course.red_robot_game
+    where
+        event_name='purchase'),
+    
+    purches_by_level as
+    (select
+        start_level.user_id,
+        start_level.level,
+        purches.value
+    from
+        start_level
+    left join
+        purches
+    on
+        start_level.user_id = purches.user_id AND
+        start_level.event_date <= purches.event_date AND
+        (start_level.next_date > purches.event_date OR start_level.next_date IS NULL))
+    
+    select
+        level,
+        count(distinct user_id) AS level_users,
+        sum(value)::decimal/count(distinct user_id) AS level_arpu
+    from
+        purches_by_level
+    group by
+        level
+    order by
+        level
+    ;'''
+ 
+    columns_names = ['level', 'count', 'arpu']
+    df = make_query(sql, columns_names)
+    print(df)
+    #exit()
+    plt.title('ARPU по уровням')
+    plt.xlabel('уровень')
+    plt.ylabel('ARPU по уровням, $')
+    plt.plot(df['level'], df['arpu'])
+    #plt.xlim(0,30)
+    plt.grid()
+    plt.tight_layout()
+    plt.show()
+get_purch_by_level()
